@@ -12,7 +12,9 @@ For the full click-by-click setup (creating the Groq/Supabase/Render accounts, i
 ultron/
 ├── backend/            FastAPI brain (Groq + Supabase)
 ├── whatsapp_bridge/    whatsapp-web.js relay
-└── hud/                Standalone browser HUD
+├── hud/                Standalone browser HUD
+└── docs/
+    └── TASKER_SETUP.md Manual steps for the phone-unlock bridge
 ```
 
 ## 1. Backend
@@ -30,8 +32,9 @@ Check `http://127.0.0.1:8000/status` — you should see `ULTRON BRAIN ONLINE`.
 - `GET /status` — health check, no auth
 - `POST /chat` — `{ "message": "...", "device": "..." }`, requires header `x-shubh-token: <SHUBH_PASSWORD>`
 - `GET /memory` — returns everything Ultron has learned, requires the same header (used by the HUD's memory panel)
+- `POST /device/command` / `GET /device/poll` — the Tasker unlock queue, see below
 
-Say "learn that ...", "remember that ...", "save that ...", or "log that ..." in a message and it gets written to Supabase permanently.
+Say "learn that ...", "remember that ...", "save that ...", or "log that ..." in a message and it gets written to Supabase permanently. Say "unlock my phone" and it queues an unlock command for Tasker to pick up.
 
 ### Deploy to Render
 
@@ -70,7 +73,8 @@ On first load it'll prompt you to **Link**: paste your Render URL and your `SHUB
 **Controls:**
 - **Hold Space** — push-to-talk. The core brightens and reacts to your real voice amplitude via the Web Audio API while you're speaking.
 - **Release Space** — sends the transcript to `/chat`, reply is spoken back with the browser's speech synthesis.
-- **Wake** button — continuous listening for the word "ultron"; say "ultron, what's my next move" and it fires automatically. Mutually exclusive with push-to-talk while active (holding Space still interrupts it).
+- **Wake** button — continuous listening for the word "ultron"; say "ultron, what's my next move" and it fires automatically.
+- **Loop** button — hands-free continuous conversation: no wake word, no held key. It listens, sends whatever you said after ~1.5s of silence, speaks the reply, then starts listening again automatically. Say "stop listening" (or "go to sleep") to end it. Mutually exclusive with Wake — turning one on turns the other off, since only one continuous recognizer can run at a time.
 - **Memory** button — opens a live panel reading `/memory`.
 - **Link** button — reopen the connection modal to change the backend URL/password.
 
@@ -82,10 +86,6 @@ Requires a Chromium-based browser (Chrome/Edge) for speech recognition — Firef
 - Keep the GitHub repo **private**. Never commit `.env` files (already covered by `.gitignore`).
 - CORS is wide open (`allow_origins=["*"]`) so the HUD can reach the API from any origin. If you never open the HUD from anywhere but your own machine, you can tighten this to your specific origin in `backend/main.py`.
 
-## What's not built yet
+## Device unlock (Tasker)
 
-Two follow-ups mentioned but not implemented in this repo:
-- **Tasker device-unlock bridge** — having Ultron trigger a Tasker profile to unlock a phone/device on command.
-- **Always-on voice loop** — continuous conversation without needing to hold Space or say the wake word each time.
-
-Say the word and either can be added next.
+The backend can queue a command ("unlock my phone" in chat/WhatsApp, or `POST /device/command`) that your Android phone consumes by polling `GET /device/poll` from Tasker. The polling/queue code is in `backend/main.py`; the Tasker-side profile has to be built by hand in the Tasker app on your phone (there's no importable file — see [`docs/TASKER_SETUP.md`](./docs/TASKER_SETUP.md) for exact steps and why).

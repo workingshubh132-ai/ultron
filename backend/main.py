@@ -25,6 +25,12 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 LEARN_KEYWORDS = ["learn that", "remember that", "save that", "log that"]
+UNLOCK_KEYWORDS = ["unlock my phone", "unlock my device", "unlock device", "unlock screen"]
+
+# In-memory queue for Tasker to poll. Fine for a single personal device; resets
+# on restart (e.g. Render's free tier spinning down), which is an acceptable
+# tradeoff for "unlock my phone" rather than something that needs to survive a reboot.
+DEVICE_COMMANDS = []
 
 SYSTEM_PROMPT_TEMPLATE = """You are ULTRON, the user's autonomous co-founder and ruthless mentor.
 
@@ -49,6 +55,10 @@ COMMUNICATION:
 class ChatRequest(BaseModel):
     message: str
     device: str = "whatsapp"
+
+
+class DeviceCommand(BaseModel):
+    action: str
 
 
 def verify_token(x_shubh_token: str = Header(None)):
@@ -109,6 +119,11 @@ def check_for_learning_command(message):
     return False, None
 
 
+def check_for_unlock_command(message):
+    lowered = message.lower()
+    return any(keyword in lowered for keyword in UNLOCK_KEYWORDS)
+
+
 def save_to_supabase_memory(topic, details):
     try:
         headers = {
@@ -142,6 +157,10 @@ async def chat_with_ultron(req: ChatRequest, authorized: bool = Depends(verify_t
         if save_to_supabase_memory(topic_content[:100], topic_content):
             ai_response += "\n\n[Permanently logged into memory.]"
 
+    if check_for_unlock_command(user_message):
+        DEVICE_COMMANDS.append({"action": "unlock", "queued_at": datetime.now().isoformat()})
+        ai_response += "\n\n[Unlock queued - Tasker will pick it up on its next poll.]"
+
     return {
         "status": "success",
         "reply": ai_response,
@@ -158,6 +177,22 @@ async def memory(authorized: bool = Depends(verify_token)):
         timeout=10,
     )
     return response.json() if response.status_code == 200 else []
+
+
+@app.post("/device/command")
+async def queue_device_command(cmd: DeviceCommand, authorized: bool = Depends(verify_token)):
+    """Manually queue a command for Tasker (the /chat unlock-phrase detection also queues via this)."""
+    entry = {"action": cmd.action, "queued_at": datetime.now().isoformat()}
+    DEVICE_COMMANDS.append(entry)
+    return {"status": "queued", **entry}
+
+
+@app.get("/device/poll")
+async def poll_device_commands(authorized: bool = Depends(verify_token)):
+    """Tasker calls this on a timer. Commands are consumed (cleared) once read."""
+    pending = list(DEVICE_COMMANDS)
+    DEVICE_COMMANDS.clear()
+    return {"commands": pending}
 
 
 @app.get("/status")

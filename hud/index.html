@@ -166,6 +166,7 @@
   }
 
   body.state-wake .core-glow { animation: breathe 1.6s ease-in-out infinite; }
+  body.state-loop .core-glow { animation: breathe 1.6s ease-in-out infinite; }
 
   /* ---------- status text ---------- */
   .status-line {
@@ -326,6 +327,7 @@
   <div class="topbar">
     <div class="wordmark">ULTRON</div>
     <div class="topbar-right">
+      <button class="hud-btn" id="loopBtn">Loop: Off</button>
       <button class="hud-btn" id="wakeBtn">Wake: Off</button>
       <button class="hud-btn" id="memoryBtn">Memory</button>
       <button class="hud-btn" id="linkBtn">Link</button>
@@ -381,15 +383,23 @@
     backendUrl: localStorage.getItem('ultron_backend_url') || '',
     token: localStorage.getItem('ultron_token') || '',
     connected: false,
-    mode: 'idle', // idle | listening | thinking | speaking | wake
+    mode: 'idle', // idle | listening | thinking | speaking | wake | loop
     wakeMode: false,
+    loopMode: false,
     audioCtx: null,
     analyser: null,
     micStream: null,
     ampRAF: null,
     pushRecognizer: null,
     wakeRecognizer: null,
+    loopRecognizer: null,
   };
+
+  const STOP_PHRASES = ['stop listening', 'go to sleep', 'stop loop', 'ultron stop', 'that will be all'];
+  function isStopPhrase(text) {
+    const t = text.toLowerCase();
+    return STOP_PHRASES.some((p) => t.includes(p));
+  }
 
   const body = document.body;
   const statusLine = document.getElementById('statusLine');
@@ -415,12 +425,15 @@
       thinking: 'THINKING...',
       speaking: 'SPEAKING...',
       wake: 'ARMED — SAY "ULTRON"',
+      loop: 'LOOP ACTIVE',
     };
     statusLine.textContent = labels[mode] || mode.toUpperCase();
   }
 
   function setHint() {
-    if (state.wakeMode && state.mode !== 'listening') {
+    if (state.loopMode && state.mode !== 'listening') {
+      hintLine.textContent = 'HANDS-FREE LOOP — JUST SPEAK, SAY "STOP LISTENING" TO END';
+    } else if (state.wakeMode && state.mode !== 'listening') {
       hintLine.textContent = 'WAKE WORD ACTIVE — SAY "ULTRON", OR HOLD SPACE';
     } else {
       hintLine.textContent = 'HOLD SPACE TO SPEAK';
@@ -513,8 +526,12 @@
     } catch (err) {
       setConnDot(false);
       addMessage('error', 'Brain unreachable: ' + err.message);
-      setMode(state.wakeMode ? 'wake' : 'idle');
-      setHint();
+      if (state.loopMode) {
+        setTimeout(startLoopListening, 300);
+      } else {
+        setMode(state.wakeMode ? 'wake' : 'idle');
+        setHint();
+      }
     }
   }
 
@@ -565,8 +582,12 @@
     };
     utter.onend = utter.onerror = () => {
       pulseWhileSpeaking(false);
-      setMode(state.wakeMode ? 'wake' : 'idle');
-      setHint();
+      if (state.loopMode) {
+        setTimeout(startLoopListening, 300);
+      } else {
+        setMode(state.wakeMode ? 'wake' : 'idle');
+        setHint();
+      }
     };
 
     window.speechSynthesis.speak(utter);
@@ -639,6 +660,7 @@
     pttFinalText = '';
 
     if (state.wakeMode) stopWakeRecognition();
+    if (state.loopMode) stopLoopListening();
     const micOk = await ensureMic();
     if (micOk) startAmpLoop();
 
@@ -680,13 +702,13 @@
 
     const text = pttFinalText.trim();
     if (text) {
-      sendMessage(text);
+      sendMessage(text); // resumes wake/loop listening itself once the reply is spoken
     } else {
-      setMode(state.wakeMode ? 'wake' : 'idle');
+      setMode(state.wakeMode ? 'wake' : (state.loopMode ? 'loop' : 'idle'));
       setHint();
+      if (state.wakeMode) setTimeout(startWakeRecognition, 400);
+      if (state.loopMode) setTimeout(startLoopListening, 400);
     }
-
-    if (state.wakeMode) setTimeout(startWakeRecognition, 400);
   }
 
   document.addEventListener('keydown', (e) => {
@@ -758,10 +780,100 @@
         wakeBtn.classList.remove('active');
         return;
       }
+      if (state.loopMode) loopBtn.click(); // mutually exclusive - one continuous recognizer at a time
       await ensureMic();
       startWakeRecognition();
     } else {
       stopWakeRecognition();
+      setMode('idle');
+      setHint();
+    }
+  });
+
+  // ---------------- hands-free loop (no wake word, no held key) ----------------
+  let loopSilenceTimer = null;
+  let loopFinalText = '';
+
+  function resetLoopSilenceTimer() {
+    if (loopSilenceTimer) clearTimeout(loopSilenceTimer);
+    loopSilenceTimer = setTimeout(() => {
+      const text = loopFinalText.trim();
+      stopLoopListening();
+
+      if (!text) {
+        if (state.loopMode) startLoopListening();
+        return;
+      }
+      if (isStopPhrase(text)) {
+        addMessage('ultron', 'Loop mode off.');
+        loopBtn.click();
+        return;
+      }
+      sendMessage(text); // resumes loop listening itself once the reply is spoken
+    }, 1500);
+  }
+
+  function startLoopListening() {
+    if (!SpeechRecognitionCtor || !state.loopMode || pttActive) return;
+    loopFinalText = '';
+
+    const rec = new SpeechRecognitionCtor();
+    rec.lang = 'en-IN';
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onstart = () => { setMode('listening'); hintLine.textContent = 'LISTENING...'; };
+    rec.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) loopFinalText += event.results[i][0].transcript + ' ';
+      }
+      resetLoopSilenceTimer();
+    };
+    rec.onerror = () => {};
+    rec.onend = () => {
+      if (state.loopMode && !pttActive && state.loopRecognizer === rec) {
+        try { rec.start(); } catch (e) {}
+      }
+    };
+
+    state.loopRecognizer = rec;
+    ensureMic().then((ok) => { if (ok) startAmpLoop(); });
+    try { rec.start(); } catch (e) {}
+    resetLoopSilenceTimer();
+  }
+
+  function stopLoopListening() {
+    if (loopSilenceTimer) { clearTimeout(loopSilenceTimer); loopSilenceTimer = null; }
+    stopAmpLoop();
+    if (state.loopRecognizer) {
+      const rec = state.loopRecognizer;
+      rec.onend = null;
+      try { rec.stop(); } catch (e) {}
+      state.loopRecognizer = null;
+    }
+  }
+
+  const loopBtn = document.getElementById('loopBtn');
+  loopBtn.addEventListener('click', async () => {
+    state.loopMode = !state.loopMode;
+    loopBtn.textContent = 'Loop: ' + (state.loopMode ? 'On' : 'Off');
+    loopBtn.classList.toggle('active', state.loopMode);
+
+    if (state.loopMode) {
+      if (!SpeechRecognitionCtor) {
+        addMessage('error', 'This browser does not support speech recognition. Use Chrome or Edge.');
+        state.loopMode = false;
+        loopBtn.textContent = 'Loop: Off';
+        loopBtn.classList.remove('active');
+        return;
+      }
+      if (state.wakeMode) wakeBtn.click(); // mutually exclusive - one continuous recognizer at a time
+      setMode('loop');
+      setHint();
+      await ensureMic();
+      startLoopListening();
+    } else {
+      stopLoopListening();
       setMode('idle');
       setHint();
     }
