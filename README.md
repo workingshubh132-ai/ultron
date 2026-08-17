@@ -93,3 +93,7 @@ Requires a Chromium-based browser (Chrome/Edge) for speech recognition — Firef
 ## Device unlock (Tasker)
 
 The backend can queue a command ("unlock my phone" in chat/WhatsApp, or `POST /device/command`) that your Android phone consumes by polling `GET /device/poll` from Tasker. The polling/queue code is in `backend/main.py`; the Tasker-side profile has to be built by hand in the Tasker app on your phone (there's no importable file — see [`docs/TASKER_SETUP.md`](./docs/TASKER_SETUP.md) for exact steps and why).
+
+## Hands-free voice on your phone (Tasker + AutoVoice)
+
+Say a trigger word ("ultron") anywhere on your phone and it listens, hits `/chat`, and speaks the reply back — no app to open. No backend changes needed, it's pure Tasker/AutoVoice configuration on top of the same `/chat` endpoint. See [`docs/AUTOVOICE_SETUP.md`](./docs/AUTOVOICE_SETUP.md).
