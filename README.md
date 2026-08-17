@@ -38,6 +38,8 @@ Check `http://127.0.0.1:8000/status` — you should see `ULTRON BRAIN ONLINE`.
 
 Say "learn that ...", "remember that ...", "save that ...", or "log that ..." in a message and it gets written to Supabase permanently. Say "unlock my phone" and it queues an unlock command for Tasker to pick up.
 
+The persona (`SYSTEM_PROMPT_TEMPLATE` in `main.py`) is a mentor/friend, not a task bot — it leans on that memory to actually know you rather than starting cold each time. Worth seeding it early: message it a few "learn that ..." facts about yourself (what you're working on, how you like to be talked to, what's going on in your life right now) before you rely on it for anything real.
+
 ### Deploy to Render
 
 - Root directory: `backend`

@@ -58,6 +58,8 @@ pip install -r requirements.txt
 
 Obsidian → "Open folder as vault" → select `local/memory-vault/`. You'll see `Ultron Home.md` and the example notes in `Projects/` and `Preferences/` — replace those with your own.
 
+**Fill in `Preferences/About Me.md` before your first real conversation.** This is what actually makes Ultron feel like it knows you instead of a fresh chatbot every session — `CLAUDE.md` tells it to read that note before anything non-mechanical. Ten minutes filling it in now saves weeks of it re-learning who you are.
+
 ### 3. Run it
 
 ```bash
