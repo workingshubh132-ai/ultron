@@ -35,6 +35,10 @@ def _write(data):
     os.replace(tmp_path, STATUS_PATH)
 
 
+def read():
+    return _read()
+
+
 def update(**kwargs):
     data = _read()
     data.update(kwargs)

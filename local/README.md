@@ -9,9 +9,18 @@ local/
 │   ├── settings.json    Stop hook wiring
 │   └── hooks/log_session.py   appends a line to today's vault note whenever a session here ends
 ├── memory-vault/         Obsidian vault - Ultron's memory, plain markdown
-├── voice/                mic -> faster-whisper -> Claude Code -> TTS loop
-├── hud/                  status display (ember/red, not Jarvis blue) + tiny local server
+├── voice/
+│   ├── engine.py         the actual claude -p invocation - shared by the voice loop and remote /chat
+│   ├── listen.py         mic capture + faster-whisper STT
+│   ├── speak.py          TTS
+│   ├── ultron_voice.py   the mic-driven loop (listen -> engine -> speak)
+│   └── status.py / vault.py   shared status.json + vault-append helpers
+├── hud/
+│   ├── server.py         status display + (if configured) authenticated remote /chat for your phone
+│   ├── index.html        status display (ember/red, not Jarvis blue) - no audio capture itself
+│   └── talk.html          voice-capable phone client (Tailscale) - see REMOTE_ACCESS_SETUP.md
 ├── run.sh                starts the HUD server + voice loop together
+├── REMOTE_ACCESS_SETUP.md
 └── requirements.txt
 ```
 
@@ -109,7 +118,11 @@ ULTRON_ALLOWED_TOOLS=Read,Grep,Glob,Edit,Write,WebFetch,WebSearch,TodoWrite,Bash
 
 `hud/index.html` is a pure status display — it does not capture audio itself (the Python voice loop does that). It polls `hud/server.py`'s `/status` endpoint once a second and shows: the core (idle/listening/thinking/speaking, colored and pulsing to match), which tool Claude Code is currently using (parsed live from `--output-format stream-json`), a scrolling activity feed, today's vault note, and CPU/memory. `server.py` is stdlib-only (no extra install) except `psutil` for the CPU/mem tiles, which degrades gracefully if it's missing.
 
-Point a second monitor or an old tablet's browser at `http://<your-machine-ip>:8765` on your LAN if you want the wall-mounted-display look — the server binds to `127.0.0.1` by default for safety; change the bind address in `hud/server.py` deliberately if you want LAN access, and know that doing so exposes your activity feed and vault contents to anything on that network.
+Point a second monitor or an old tablet's browser at `http://<your-machine-ip>:8765` on your LAN if you want the wall-mounted-display look — the server binds to `127.0.0.1` by default for safety; set `ULTRON_HUD_BIND=0.0.0.0` in `.env` deliberately if you want it reachable from other devices, and know that doing so exposes read-only status/vault content to anything that can reach that address unless you've also set `ULTRON_REMOTE_TOKEN`.
+
+## Reaching it from your phone
+
+`hud/server.py` can also run a full `/chat` endpoint - same shape as the cloud stack's, so `hud/talk.html` (a voice-capable phone client, near-identical to the cloud HUD) works against it. This needs `ULTRON_REMOTE_TOKEN` set and the server reachable from your phone, which in practice means [Tailscale](https://tailscale.com) rather than exposing it publicly. See [`REMOTE_ACCESS_SETUP.md`](./REMOTE_ACCESS_SETUP.md) - and read the cost note at the top of that file before setting it up, since every message through this path is real Claude usage, not the free tier the cloud stack runs on.
 
 ## Memory (the vault)
 
