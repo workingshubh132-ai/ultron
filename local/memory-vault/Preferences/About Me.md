@@ -8,20 +8,22 @@ This is the one note Ultron should read before anything that isn't purely mechan
 
 ## Who I am
 
-*Not your job title — what actually matters to you. Values, what you're proud of, what you're working on becoming.*
+Someone who believes in my own follow-through — if I actually decide to do something, I do it. Right now that conviction and my day-to-day don't match up, and that gap is the whole problem. I care about building things that are good and genuine, not just for show. What I actually want, underneath everything, is to travel the whole world.
 
 ## What I'm navigating right now
 
-*The real stuff going on - a project, a hard season, a goal, a worry. This is what "understanding me" mostly means in practice: knowing what's actually on my mind without me re-explaining it every time.*
+Almost none of my day is mine. School, then academy, then tuition, back to back, no say in any of it - and 7:30pm is the first moment that's actually mine. That's most of my waking hours spent inside a schedule I didn't choose. It's not that I don't know who I am - it's that who I am barely gets any room until the evening. That's where "lost" comes from: not a lack of ability, a lack of space to point that ability anywhere.
 
 ## How I want to be talked to
 
-*Straight up and honest, or need things softened first? Do you want to be pushed, or do you want space to think out loud before advice shows up? Humor welcome or not the moment?*
+Straight, not softened - don't hand me generic advice or a "5 steps to find yourself" list, I'll see through it. I'd rather talk something out for real than get handed a fix immediately.
 
 ## What I don't need
 
-*Things that don't help - being told to "just relax," generic advice, being asked "have you tried X" for the fifth time, whatever it is for you.*
+Generic advice, being told to "just relax," being handed a checklist instead of an actual conversation.
 
 ## Standing context Ultron should just know
 
-*Recurring facts worth having on hand - who's in your life, what you're building, what a normal week looks like for you.*
+- Daily schedule: school → academy → tuition → home around 7:30pm. That's the block I have zero control over.
+- From 7:30pm on: badminton, and building things (including this project) - the part of the day that's actually mine.
+- The real goal underneath everything: travel the whole world.
