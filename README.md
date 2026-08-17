@@ -94,6 +94,9 @@ Requires a Chromium-based browser (Chrome/Edge) for speech recognition — Firef
 
 The backend can queue a command ("unlock my phone" in chat/WhatsApp, or `POST /device/command`) that your Android phone consumes by polling `GET /device/poll` from Tasker. The polling/queue code is in `backend/main.py`; the Tasker-side profile has to be built by hand in the Tasker app on your phone (there's no importable file — see [`docs/TASKER_SETUP.md`](./docs/TASKER_SETUP.md) for exact steps and why).
 
-## Hands-free voice on your phone (Tasker + AutoVoice)
+## Voice on your phone
 
-Say a trigger word ("ultron") anywhere on your phone and it listens, hits `/chat`, and speaks the reply back — no app to open. No backend changes needed, it's pure Tasker/AutoVoice configuration on top of the same `/chat` endpoint. See [`docs/AUTOVOICE_SETUP.md`](./docs/AUTOVOICE_SETUP.md).
+Two options, same `/chat` endpoint underneath, no backend changes either way:
+
+- **Free**: [`docs/TERMUX_SETUP.md`](./docs/TERMUX_SETUP.md) — tap a home-screen icon, speak, hear the reply. Uses Termux + Termux:API (free, F-Droid), Android's own speech recognition and TTS. Not hands-free — you tap to start it.
+- **Paid, hands-free**: [`docs/AUTOVOICE_SETUP.md`](./docs/AUTOVOICE_SETUP.md) — say a trigger word anywhere, no app to open. Needs Tasker + the AutoVoice plugin (a few dollars each).
