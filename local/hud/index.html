@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULTRON — Local</title>
+<style>
+  :root {
+    --bg: #050403;
+    --ember: #ff2a1f;
+    --ember-bright: #ff5a2a;
+    --ember-dim: #5a1a10;
+    --gold: #ffb02e;
+    --text: #ffd9c2;
+    --text-dim: #a5776a;
+    --panel-bg: rgba(20, 8, 6, 0.85);
+    --panel-border: rgba(255, 90, 42, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #050403;
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 50% 40%, rgba(120, 20, 10, 0.22), transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(60, 10, 5, 0.4), transparent 60%),
+      #050403;
+    display: grid;
+    grid-template-columns: 300px 1fr 300px;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+    padding: 24px;
+    gap: 20px;
+  }
+
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wordmark {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    color: var(--ember-bright);
+    text-shadow: 0 0 18px rgba(255, 90, 42, 0.6);
+  }
+  .wordmark small { display: block; font-size: 9px; letter-spacing: 3px; color: var(--text-dim); margin-top: 2px; }
+
+  .conn {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b3b; box-shadow: 0 0 8px #ff3b3b; }
+  .conn-dot.online { background: #4dff7a; box-shadow: 0 0 10px #4dff7a; }
+
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  /* ---------- center: core + status ---------- */
+  .core-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .core-wrap { position: relative; width: min(38vh, 32vw, 320px); height: min(38vh, 32vw, 320px); }
+
+  .ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--panel-border); }
+  .ring.r1 { animation: spin 22s linear infinite; border-style: dashed; opacity: 0.5; }
+  .ring.r2 { inset: 8%; animation: spin 16s linear infinite reverse; opacity: 0.35; }
+  .ring.r3 { inset: 16%; opacity: 0.7; border-width: 2px; border-color: var(--ember); transition: transform 0.3s ease; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .core-glow {
+    position: absolute; inset: 26%; border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--gold), var(--ember) 45%, var(--ember-dim) 75%, transparent 100%);
+    filter: blur(2px);
+    box-shadow: 0 0 40px 10px rgba(255, 80, 30, 0.4), 0 0 140px 40px rgba(255, 40, 20, 0.12);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .core-inner { position: absolute; inset: 40%; border-radius: 50%; background: #fff3e0; box-shadow: 0 0 24px 8px #fff0d8; }
+
+  body[data-state="idle"] .core-glow, body[data-state="offline"] .core-glow { animation: breathe 4.5s ease-in-out infinite; }
+  body[data-state="listening"] .core-glow { animation: pulse-fast 1s ease-in-out infinite; transform: scale(1.08); }
+  body[data-state="thinking"] .ring.r2 { animation-duration: 2s; }
+  body[data-state="thinking"] .core-glow {
+    background: radial-gradient(circle at 50% 50%, var(--gold), #ff8a1f 45%, var(--ember-dim) 75%, transparent 100%);
+    animation: pulse-fast 1.4s ease-in-out infinite;
+  }
+  body[data-state="speaking"] .core-glow { animation: pulse-fast 0.5s ease-in-out infinite; transform: scale(1.05); }
+  body[data-state="offline"] .core-glow { filter: blur(2px) grayscale(0.6) brightness(0.6); }
+
+  @keyframes breathe { 0%, 100% { filter: blur(2px) brightness(0.85); } 50% { filter: blur(2px) brightness(1.05); } }
+  @keyframes pulse-fast { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+  .status-line { font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: var(--text-dim); text-align: center; }
+  .status-line b { color: var(--ember-bright); }
+  .tool-badge {
+    font-size: 11px; letter-spacing: 1px; color: var(--gold);
+    border: 1px solid var(--panel-border); border-radius: 4px; padding: 4px 10px;
+    display: none;
+  }
+  .tool-badge.show { display: inline-block; }
+
+  .transcript-preview { max-width: 380px; text-align: center; font-size: 13px; color: var(--text); line-height: 1.5; min-height: 20px; }
+
+  /* ---------- side panels ---------- */
+  .stat-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .stat-tile { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--panel-border); border-radius: 4px; padding: 10px; text-align: center; }
+  .stat-tile .num { font-size: 20px; color: var(--ember-bright); font-weight: 700; }
+  .stat-tile .lbl { font-size: 9px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+
+  .feed-item { font-size: 12px; line-height: 1.5; padding: 8px 0; border-bottom: 1px solid rgba(255, 90, 42, 0.15); }
+  .feed-item .role { color: var(--gold); font-weight: 600; }
+  .feed-item.ultron .role { color: var(--ember-bright); }
+  .feed-item.session .role { color: var(--text-dim); }
+  .feed-empty, .memory-empty { font-size: 12px; color: var(--text-dim); }
+
+  .memory-text { white-space: pre-wrap; font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--ember-dim); border-radius: 2px; }
+</style>
+</head>
+<body data-state="offline">
+
+  <div class="topbar">
+    <div class="wordmark">ULTRON<small>LOCAL ENGINE</small></div>
+    <div class="conn"><span class="conn-dot" id="connDot"></span><span id="connLabel">CONNECTING...</span></div>
+  </div>
+
+  <div class="panel" id="activityPanel">
+    <h3>Activity</h3>
+    <div id="activityFeed"><div class="feed-empty">Nothing yet.</div></div>
+  </div>
+
+  <div class="core-col">
+    <div class="core-wrap">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <div class="core-glow"></div>
+      <div class="core-inner"></div>
+    </div>
+    <div class="status-line" id="statusLine">OFFLINE</div>
+    <div class="tool-badge" id="toolBadge"></div>
+    <div class="transcript-preview" id="transcriptPreview"></div>
+  </div>
+
+  <div class="panel" id="memoryPanel">
+    <h3>Memory — Today</h3>
+    <div class="stat-row" id="statRow">
+      <div class="stat-tile"><div class="num" id="cpuStat">--</div><div class="lbl">CPU %</div></div>
+      <div class="stat-tile"><div class="num" id="memStat">--</div><div class="lbl">MEM %</div></div>
+    </div>
+    <div class="memory-text" id="memoryText"><span class="memory-empty">No entries yet today.</span></div>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  const body = document.body;
+  const connDot = document.getElementById('connDot');
+  const connLabel = document.getElementById('connLabel');
+  const statusLine = document.getElementById('statusLine');
+  const toolBadge = document.getElementById('toolBadge');
+  const transcriptPreview = document.getElementById('transcriptPreview');
+  const activityFeed = document.getElementById('activityFeed');
+  const memoryText = document.getElementById('memoryText');
+  const cpuStat = document.getElementById('cpuStat');
+  const memStat = document.getElementById('memStat');
+
+  const STATE_LABELS = {
+    idle: 'IDLE',
+    listening: 'LISTENING...',
+    thinking: 'THINKING...',
+    speaking: 'SPEAKING...',
+    offline: 'OFFLINE',
+  };
+
+  function renderStatus(data) {
+    const state = data.state || 'offline';
+    body.setAttribute('data-state', state);
+    statusLine.innerHTML = STATE_LABELS[state] || state.toUpperCase();
+
+    if (state === 'thinking' && data.current_tool) {
+      toolBadge.textContent = 'USING: ' + data.current_tool.toUpperCase();
+      toolBadge.classList.add('show');
+    } else {
+      toolBadge.classList.remove('show');
+    }
+
+    transcriptPreview.textContent = state === 'listening' || state === 'thinking'
+      ? (data.last_transcript || '')
+      : (data.last_reply || '');
+
+    const history = Array.isArray(data.history) ? data.history.slice().reverse() : [];
+    if (history.length === 0) {
+      activityFeed.innerHTML = '<div class="feed-empty">Nothing yet.</div>';
+    } else {
+      activityFeed.innerHTML = history.map(function (h) {
+        const roleLabel = h.role === 'user' ? 'YOU' : h.role === 'ultron' ? 'ULTRON' : 'SESSION';
+        const text = (h.text || '').replace(/</g, '&lt;');
+        const time = h.ts ? new Date(h.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        return '<div class="feed-item ' + h.role + '"><span class="role">' + roleLabel + '</span> · ' + time + '<br>' + text + '</div>';
+      }).join('');
+    }
+
+    if (data.system) {
+      cpuStat.textContent = Math.round(data.system.cpu_percent);
+      memStat.textContent = Math.round(data.system.mem_percent);
+    }
+  }
+
+  async function pollStatus() {
+    try {
+      const res = await fetch('/status', { cache: 'no-store' });
+      if (!res.ok) throw new Error('status ' + res.status);
+      const data = await res.json();
+      connDot.classList.add('online');
+      connLabel.textContent = 'ENGINE CONNECTED';
+      renderStatus(data);
+    } catch (e) {
+      connDot.classList.remove('online');
+      connLabel.textContent = 'ENGINE UNREACHABLE';
+      body.setAttribute('data-state', 'offline');
+      statusLine.textContent = 'OFFLINE';
+    }
+  }
+
+  async function pollMemory() {
+    try {
+      const res = await fetch('/vault/today', { cache: 'no-store' });
+      if (!res.ok) throw new Error('status ' + res.status);
+      const data = await res.json();
+      memoryText.textContent = data.text && data.text.trim() ? data.text : '';
+      if (!data.text || !data.text.trim()) {
+        memoryText.innerHTML = '<span class="memory-empty">No entries yet today.</span>';
+      }
+    } catch (e) {
+      memoryText.innerHTML = '<span class="memory-empty">Could not read vault.</span>';
+    }
+  }
+
+  pollStatus();
+  pollMemory();
+  setInterval(pollStatus, 1000);
+  setInterval(pollMemory, 5000);
+})();
+</script>
+</body>
+</html>

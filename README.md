@@ -1,20 +1,22 @@
 # ULTRON OS
 
-A personal AI assistant with three parts:
+Two separate ways to build a personal Ultron in this repo — pick one, or run both:
 
-1. **Brain** (`backend/`) — FastAPI service that talks to Groq (free LLM) and remembers things in Supabase.
-2. **WhatsApp bridge** (`whatsapp_bridge/`) — relays your personal WhatsApp messages to the brain and replies with what it says.
-3. **HUD** (`hud/`) — a standalone, ember/red "reactor" interface you can put on a spare monitor or TV: hold Space to talk, it speaks back, the core pulses with your live voice amplitude, there's a wake-word mode, and a live memory panel.
+1. **Cloud + WhatsApp** (`backend/`, `whatsapp_bridge/`, `hud/`) — a FastAPI brain on Groq + Supabase, deployed to Render, that you text on WhatsApp; plus a browser HUD that talks to it directly. Always-on, reachable from your phone anywhere. Covered below.
+2. **Local** (`local/`) — the other well-known "personal Jarvis" recipe: Claude Code itself as the thinking/acting engine, an Obsidian vault as memory, a fully local voice pipeline (faster-whisper + TTS) as ears/mouth, and a status-display HUD as the face. Everything runs on your own machine, nothing leaves it except normal Claude Code API calls. See [`local/README.md`](./local/README.md) — different enough from the stack below that it gets its own doc.
 
-For the full click-by-click setup (creating the Groq/Supabase/Render accounts, installing Python/Node/Git), see [`ULTRON_COMPLETE_BEGINNER_GUIDE.md`](./ULTRON_COMPLETE_BEGINNER_GUIDE.md). This README is the fast path once those accounts exist.
+They don't depend on each other. The rest of this README is the cloud/WhatsApp stack.
+
+For the full click-by-click setup of that stack (creating the Groq/Supabase/Render accounts, installing Python/Node/Git), see [`ULTRON_COMPLETE_BEGINNER_GUIDE.md`](./ULTRON_COMPLETE_BEGINNER_GUIDE.md). This README is the fast path once those accounts exist.
 
 ```
 ultron/
 ├── backend/            FastAPI brain (Groq + Supabase)
 ├── whatsapp_bridge/    whatsapp-web.js relay
-├── hud/                Standalone browser HUD
-└── docs/
-    └── TASKER_SETUP.md Manual steps for the phone-unlock bridge
+├── hud/                Standalone browser HUD (talks to backend/ over the internet)
+├── docs/
+│   └── TASKER_SETUP.md Manual steps for the phone-unlock bridge
+└── local/              The other stack: Claude Code + Obsidian + local voice + a status HUD
 ```
 
 ## 1. Backend

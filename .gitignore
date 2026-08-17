@@ -15,6 +15,11 @@ npm-debug.log*
 .env.local
 *.env
 
+# Ultron local stack runtime state (voice transcripts, live status - personal, not template)
+local/hud/status.json
+local/memory-vault/Daily/*.md
+!local/memory-vault/Daily/.gitkeep
+
 # OS
 .DS_Store
 Thumbs.db
