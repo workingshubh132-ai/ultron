@@ -320,6 +320,18 @@
   }
   .modal-msg.ok { color: #4dff7a; }
   .modal-msg.fail { color: #ff5a5a; }
+
+  /* ---------- phone screens ---------- */
+  @media (max-width: 640px) {
+    .topbar { padding: 14px; flex-wrap: wrap; gap: 8px; }
+    .wordmark { font-size: 15px; letter-spacing: 4px; }
+    .topbar-right { flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .hud-btn { padding: 6px 10px; font-size: 9px; letter-spacing: 1px; }
+    .core-wrap { width: min(60vw, 300px); height: min(60vw, 300px); }
+    .transcript { left: 12px; right: 12px; width: auto; bottom: 60px; }
+    .memory-panel { left: 12px; right: 12px; width: auto; top: 78px; max-height: 45vh; }
+    .modal { width: calc(100vw - 40px); }
+  }
 </style>
 </head>
 <body class="state-idle">
