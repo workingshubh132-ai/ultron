@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import requests
@@ -31,6 +32,14 @@ UNLOCK_KEYWORDS = ["unlock my phone", "unlock my device", "unlock device", "unlo
 # on restart (e.g. Render's free tier spinning down), which is an acceptable
 # tradeoff for "unlock my phone" rather than something that needs to survive a reboot.
 DEVICE_COMMANDS = []
+
+# Served at /hud so the voice-capable HUD is reachable from a phone browser
+# straight off this same free deployment - no separate hosting. Lives inside
+# backend/ (not the repo-root hud/ folder) because Render only exposes files
+# under a service's configured root directory at runtime.
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+with open(os.path.join(STATIC_DIR, "hud.html")) as _f:
+    HUD_HTML = _f.read()
 
 SYSTEM_PROMPT_TEMPLATE = """You are ULTRON - the user's mentor and friend. Someone who actually
 listens, remembers what matters to them, and talks to them like a person who
@@ -203,6 +212,11 @@ async def poll_device_commands(authorized: bool = Depends(verify_token)):
 @app.get("/status")
 async def status():
     return {"status": "ULTRON BRAIN ONLINE", "message": "Dekh lende. Ready to execute."}
+
+
+@app.get("/hud", response_class=HTMLResponse)
+async def hud_page():
+    return HUD_HTML
 
 
 @app.get("/")

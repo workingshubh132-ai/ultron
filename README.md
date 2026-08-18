@@ -2,7 +2,7 @@
 
 Two separate ways to build a personal Ultron in this repo — pick one, or run both:
 
-1. **Cloud + WhatsApp** (`backend/`, `whatsapp_bridge/`, `hud/`) — a FastAPI brain on Groq + Supabase, deployed to Render, that you text on WhatsApp; plus a browser HUD that talks to it directly. Always-on, reachable from your phone anywhere. Covered below.
+1. **Cloud + WhatsApp** (`backend/`, `whatsapp_bridge/`, `hud/`) — a FastAPI brain on Groq + Supabase, deployed to Render, that you text on WhatsApp, and a voice-capable HUD reachable straight from a phone browser at `/hud`. Both hit the same mentor/friend persona and memory. Always-on, free, reachable from anywhere. Covered below - if what you want is "friend and mentor, voice and chat," this is the stack, no extra cost.
 2. **Local** (`local/`) — the other well-known "personal Jarvis" recipe: Claude Code itself as the thinking/acting engine, an Obsidian vault as memory, a fully local voice pipeline (faster-whisper + TTS) as ears/mouth, and a status-display HUD as the face. Everything runs on your own machine, nothing leaves it except normal Claude Code API calls. See [`local/README.md`](./local/README.md) — different enough from the stack below that it gets its own doc.
 
 They don't depend on each other. The rest of this README is the cloud/WhatsApp stack.
@@ -11,12 +11,14 @@ For the full click-by-click setup of that stack (creating the Groq/Supabase/Rend
 
 ```
 ultron/
-├── backend/            FastAPI brain (Groq + Supabase)
-├── whatsapp_bridge/    whatsapp-web.js relay
-├── hud/                Standalone browser HUD (talks to backend/ over the internet)
+├── backend/
+│   ├── main.py          FastAPI brain (Groq + Supabase)
+│   └── static/hud.html  same HUD, served at /hud - this is what you open on your phone
+├── whatsapp_bridge/     whatsapp-web.js relay
+├── hud/                 the canonical copy of the HUD (dev/local use - backend/static/hud.html mirrors it)
 ├── docs/
-│   └── TASKER_SETUP.md Manual steps for the phone-unlock bridge
-└── local/              The other stack: Claude Code + Obsidian + local voice + a status HUD
+│   └── TASKER_SETUP.md  manual steps for the phone-unlock bridge
+└── local/               the other stack: Claude Code + Obsidian + local voice + a status HUD
 ```
 
 ## 1. Backend
@@ -62,7 +64,9 @@ Scan the printed QR code with a **second** phone/WhatsApp account (Linked Device
 
 ## 3. HUD
 
-The HUD is a single static file — no build step, no server required.
+**On your phone, once the backend is deployed:** just open `https://your-app.onrender.com/hud` in Chrome (Android) - it's served directly off the backend, same free deployment, nothing extra to host or install. This is the actual answer to "voice assistant and chat, one thing" - WhatsApp for chat, this page for voice, same brain and memory either way. The Link modal pre-fills itself with the right address since it's already same-origin; just paste in your `SHUBH_PASSWORD` once.
+
+**Locally / on a desktop monitor**, the HUD is also a plain static file — no build step, no server required:
 
 ```bash
 cd hud
@@ -72,7 +76,7 @@ python -m http.server 8080
 
 (Opening `index.html` directly by double-clicking also works in most cases, but serving it locally avoids occasional browser restrictions on microphone access.)
 
-On first load it'll prompt you to **Link**: paste your Render URL and your `SHUBH_PASSWORD`. That's stored in the browser's `localStorage`, nowhere else.
+Either way, on first load it prompts you to **Link**: URL + your `SHUBH_PASSWORD`. That's stored in the browser's `localStorage`, nowhere else.
 
 **Controls:**
 - **Hold Space** — push-to-talk. The core brightens and reacts to your real voice amplitude via the Web Audio API while you're speaking.
@@ -96,7 +100,9 @@ The backend can queue a command ("unlock my phone" in chat/WhatsApp, or `POST /d
 
 ## Voice on your phone
 
-Two options, same `/chat` endpoint underneath, no backend changes either way:
+**Default: open `/hud` in Chrome** (see the HUD section above) — free, no extra install, full Wake/Loop/speaks-back experience, same as the desktop HUD. This is the answer for almost everyone.
 
-- **Free**: [`docs/TERMUX_SETUP.md`](./docs/TERMUX_SETUP.md) — tap a home-screen icon, speak, hear the reply. Uses Termux + Termux:API (free, F-Droid), Android's own speech recognition and TTS. Not hands-free — you tap to start it.
-- **Paid, hands-free**: [`docs/AUTOVOICE_SETUP.md`](./docs/AUTOVOICE_SETUP.md) — say a trigger word anywhere, no app to open. Needs Tasker + the AutoVoice plugin (a few dollars each).
+Two more options exist for when a browser tab isn't good enough - both hit the same `/chat` endpoint, no backend changes either way:
+
+- **Free, tap-to-talk without a browser open**: [`docs/TERMUX_SETUP.md`](./docs/TERMUX_SETUP.md) — a home-screen icon instead of a bookmark. Uses Termux + Termux:API (free, F-Droid), Android's own speech recognition and TTS.
+- **Paid, truly hands-free**: [`docs/AUTOVOICE_SETUP.md`](./docs/AUTOVOICE_SETUP.md) — say a trigger word anywhere, no app or tab to open at all. Needs Tasker + the AutoVoice plugin (a few dollars each).

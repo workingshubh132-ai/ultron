@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULTRON</title>
+<style>
+  :root {
+    --amp: 0;
+    --bg: #050403;
+    --ember: #ff2a1f;
+    --ember-bright: #ff5a2a;
+    --ember-dim: #5a1a10;
+    --gold: #ffb02e;
+    --text: #ffd9c2;
+    --text-dim: #a5776a;
+    --panel-bg: rgba(20, 8, 6, 0.85);
+    --panel-border: rgba(255, 90, 42, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 50% 45%, rgba(120, 20, 10, 0.25), transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(60, 10, 5, 0.4), transparent 60%),
+      #050403;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 32px;
+    z-index: 20;
+  }
+
+  .wordmark {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    color: var(--ember-bright);
+    text-shadow: 0 0 18px rgba(255, 90, 42, 0.6);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .conn-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #732;
+    box-shadow: 0 0 8px #732;
+    transition: all 0.3s ease;
+  }
+  .conn-dot.online { background: #4dff7a; box-shadow: 0 0 10px #4dff7a; }
+  .conn-dot.offline { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; }
+
+  .hud-btn {
+    background: rgba(255, 90, 42, 0.08);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 8px 16px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+  }
+  .hud-btn:hover {
+    background: rgba(255, 90, 42, 0.2);
+    box-shadow: 0 0 12px rgba(255, 90, 42, 0.35);
+  }
+  .hud-btn.active {
+    background: rgba(255, 90, 42, 0.35);
+    color: #fff;
+  }
+
+  /* ---------- core / reactor ---------- */
+  .core-stage {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .core-wrap {
+    position: relative;
+    width: min(48vh, 48vw, 420px);
+    height: min(48vh, 48vw, 420px);
+  }
+
+  .ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--panel-border);
+  }
+  .ring.r1 { inset: 0; animation: spin 22s linear infinite; border-style: dashed; opacity: 0.5; }
+  .ring.r2 { inset: 8%; animation: spin 16s linear infinite reverse; opacity: 0.35; }
+  .ring.r3 {
+    inset: 16%;
+    opacity: 0.7;
+    transform: scale(calc(1 + var(--amp) * 0.06));
+    transition: transform 0.06s linear;
+    border-width: 2px;
+    border-color: var(--ember);
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .core-glow {
+    position: absolute;
+    inset: 26%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--gold), var(--ember) 45%, var(--ember-dim) 75%, transparent 100%);
+    filter: blur(2px);
+    box-shadow:
+      0 0 calc(30px + var(--amp) * 90px) calc(4px + var(--amp) * 26px) rgba(255, 80, 30, calc(0.45 + var(--amp) * 0.4)),
+      0 0 140px 40px rgba(255, 40, 20, 0.12);
+    transform: scale(calc(0.82 + var(--amp) * 0.22));
+    transition: transform 0.05s linear, box-shadow 0.05s linear;
+  }
+
+  .core-inner {
+    position: absolute;
+    inset: 40%;
+    border-radius: 50%;
+    background: #fff3e0;
+    box-shadow: 0 0 24px 8px #fff0d8;
+    opacity: calc(0.6 + var(--amp) * 0.4);
+    transform: scale(calc(0.9 + var(--amp) * 0.35));
+    transition: transform 0.05s linear;
+  }
+
+  body.state-idle .core-glow { animation: breathe 4.5s ease-in-out infinite; }
+  @keyframes breathe {
+    0%, 100% { filter: blur(2px) brightness(0.85); }
+    50% { filter: blur(2px) brightness(1.05); }
+  }
+
+  body.state-thinking .ring.r2 { animation-duration: 2.2s; }
+  body.state-thinking .core-glow {
+    background: radial-gradient(circle at 50% 50%, var(--gold), #ff8a1f 45%, var(--ember-dim) 75%, transparent 100%);
+  }
+
+  body.state-wake .core-glow { animation: breathe 1.6s ease-in-out infinite; }
+  body.state-loop .core-glow { animation: breathe 1.6s ease-in-out infinite; }
+
+  /* ---------- status text ---------- */
+  .status-line {
+    margin-top: 34px;
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    height: 16px;
+    text-align: center;
+  }
+
+  .hint-line {
+    position: fixed;
+    bottom: 26px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    z-index: 15;
+  }
+
+  /* ---------- transcript panel ---------- */
+  .transcript {
+    position: fixed;
+    left: 28px;
+    bottom: 70px;
+    width: 340px;
+    max-height: 40vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 15;
+    padding-right: 6px;
+  }
+  .transcript::-webkit-scrollbar { width: 4px; }
+  .transcript::-webkit-scrollbar-thumb { background: var(--ember-dim); border-radius: 2px; }
+
+  .msg {
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    white-space: pre-wrap;
+  }
+  .msg.user { border-color: rgba(255, 176, 46, 0.4); color: var(--gold); }
+  .msg.ultron { color: var(--text); }
+  .msg.error { border-color: #ff3b3b; color: #ff8a8a; }
+
+  /* ---------- memory panel ---------- */
+  .memory-panel {
+    position: fixed;
+    right: 28px;
+    top: 90px;
+    width: 300px;
+    max-height: 55vh;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 16px;
+    z-index: 18;
+    overflow-y: auto;
+    display: none;
+  }
+  .memory-panel.open { display: block; }
+  .memory-panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .memory-item {
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 90, 42, 0.15);
+    color: var(--text-dim);
+  }
+  .memory-item b { color: var(--text); display: block; }
+  .memory-empty { font-size: 12px; color: var(--text-dim); }
+
+  /* ---------- link modal ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    width: 360px;
+    background: #0e0705;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 0 60px rgba(255, 60, 20, 0.15);
+  }
+  .modal h2 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: var(--ember-bright);
+  }
+  .modal p.sub {
+    margin: 0 0 18px 0;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .modal label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .modal input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .modal input:focus { outline: none; border-color: var(--ember-bright); }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .modal-actions .hud-btn { flex: 1; text-align: center; }
+
+  .modal-msg {
+    margin-top: 12px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    min-height: 14px;
+  }
+  .modal-msg.ok { color: #4dff7a; }
+  .modal-msg.fail { color: #ff5a5a; }
+</style>
+</head>
+<body class="state-idle">
+
+  <div class="topbar">
+    <div class="wordmark">ULTRON</div>
+    <div class="topbar-right">
+      <button class="hud-btn" id="loopBtn">Loop: Off</button>
+      <button class="hud-btn" id="wakeBtn">Wake: Off</button>
+      <button class="hud-btn" id="memoryBtn">Memory</button>
+      <button class="hud-btn" id="linkBtn">Link</button>
+      <span class="conn-dot offline" id="connDot" title="Backend connection"></span>
+    </div>
+  </div>
+
+  <div class="core-stage">
+    <div class="core-wrap">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <div class="core-glow"></div>
+      <div class="core-inner"></div>
+    </div>
+    <div class="status-line" id="statusLine">IDLE</div>
+  </div>
+
+  <div class="transcript" id="transcript"></div>
+
+  <div class="hint-line" id="hintLine">HOLD SPACE TO SPEAK</div>
+
+  <div class="memory-panel" id="memoryPanel">
+    <h3>Known Memory</h3>
+    <div id="memoryList"><div class="memory-empty">Not linked yet.</div></div>
+  </div>
+
+  <div class="modal-overlay" id="linkOverlay">
+    <div class="modal">
+      <h2>LINK TO BRAIN</h2>
+      <p class="sub">Connect this HUD to your Ultron backend.</p>
+
+      <label for="urlInput">Backend URL</label>
+      <input id="urlInput" type="text" placeholder="https://ultron-brain.onrender.com" autocomplete="off">
+
+      <label for="tokenInput">Password</label>
+      <input id="tokenInput" type="password" placeholder="dekh_lende_2026" autocomplete="off">
+
+      <div class="modal-actions">
+        <button class="hud-btn" id="testBtn">Test</button>
+        <button class="hud-btn active" id="saveBtn">Save &amp; Close</button>
+      </div>
+      <div class="modal-msg" id="modalMsg"></div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------- state ----------------
+  const state = {
+    backendUrl: localStorage.getItem('ultron_backend_url') || '',
+    token: localStorage.getItem('ultron_token') || '',
+    connected: false,
+    mode: 'idle', // idle | listening | thinking | speaking | wake | loop
+    wakeMode: false,
+    loopMode: false,
+    audioCtx: null,
+    analyser: null,
+    micStream: null,
+    ampRAF: null,
+    pushRecognizer: null,
+    wakeRecognizer: null,
+    loopRecognizer: null,
+  };
+
+  const STOP_PHRASES = ['stop listening', 'go to sleep', 'stop loop', 'ultron stop', 'that will be all'];
+  function isStopPhrase(text) {
+    const t = text.toLowerCase();
+    return STOP_PHRASES.some((p) => t.includes(p));
+  }
+
+  const body = document.body;
+  const statusLine = document.getElementById('statusLine');
+  const hintLine = document.getElementById('hintLine');
+  const connDot = document.getElementById('connDot');
+  const transcript = document.getElementById('transcript');
+  const memoryPanel = document.getElementById('memoryPanel');
+  const memoryList = document.getElementById('memoryList');
+  const linkOverlay = document.getElementById('linkOverlay');
+  const urlInput = document.getElementById('urlInput');
+  const tokenInput = document.getElementById('tokenInput');
+  const modalMsg = document.getElementById('modalMsg');
+  const wakeBtn = document.getElementById('wakeBtn');
+
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function setMode(mode) {
+    state.mode = mode;
+    body.className = 'state-' + mode;
+    const labels = {
+      idle: 'IDLE',
+      listening: 'LISTENING...',
+      thinking: 'THINKING...',
+      speaking: 'SPEAKING...',
+      wake: 'ARMED — SAY "ULTRON"',
+      loop: 'LOOP ACTIVE',
+    };
+    statusLine.textContent = labels[mode] || mode.toUpperCase();
+  }
+
+  function setHint() {
+    if (state.loopMode && state.mode !== 'listening') {
+      hintLine.textContent = 'HANDS-FREE LOOP — JUST SPEAK, SAY "STOP LISTENING" TO END';
+    } else if (state.wakeMode && state.mode !== 'listening') {
+      hintLine.textContent = 'WAKE WORD ACTIVE — SAY "ULTRON", OR HOLD SPACE';
+    } else {
+      hintLine.textContent = 'HOLD SPACE TO SPEAK';
+    }
+  }
+
+  function addMessage(role, text) {
+    const el = document.createElement('div');
+    el.className = 'msg ' + role;
+    el.textContent = (role === 'user' ? 'YOU: ' : role === 'error' ? '! ' : 'ULTRON: ') + text;
+    transcript.appendChild(el);
+    transcript.scrollTop = transcript.scrollHeight;
+  }
+
+  // ---------------- linking ----------------
+  function openLink() {
+    urlInput.value = state.backendUrl || window.location.origin;
+    tokenInput.value = state.token;
+    modalMsg.textContent = '';
+    modalMsg.className = 'modal-msg';
+    linkOverlay.classList.add('open');
+  }
+  function closeLink() { linkOverlay.classList.remove('open'); }
+
+  async function testConnection(url, token, silent) {
+    if (!url) { setConnDot(false); return false; }
+    try {
+      const res = await fetch(url.replace(/\/$/, '') + '/status', { method: 'GET' });
+      const ok = res.ok;
+      setConnDot(ok);
+      if (!silent) {
+        modalMsg.textContent = ok ? 'Connected — brain is online.' : 'Reached the server but it did not respond OK.';
+        modalMsg.className = 'modal-msg ' + (ok ? 'ok' : 'fail');
+      }
+      return ok;
+    } catch (e) {
+      setConnDot(false);
+      if (!silent) {
+        modalMsg.textContent = 'Could not reach that URL.';
+        modalMsg.className = 'modal-msg fail';
+      }
+      return false;
+    }
+  }
+
+  function setConnDot(online) {
+    state.connected = online;
+    connDot.classList.toggle('online', online);
+    connDot.classList.toggle('offline', !online);
+  }
+
+  document.getElementById('linkBtn').addEventListener('click', openLink);
+  document.getElementById('testBtn').addEventListener('click', () => {
+    testConnection(urlInput.value.trim(), tokenInput.value.trim(), false);
+  });
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    state.backendUrl = urlInput.value.trim();
+    state.token = tokenInput.value.trim();
+    localStorage.setItem('ultron_backend_url', state.backendUrl);
+    localStorage.setItem('ultron_token', state.token);
+    testConnection(state.backendUrl, state.token, true);
+    closeLink();
+  });
+  linkOverlay.addEventListener('click', (e) => { if (e.target === linkOverlay) closeLink(); });
+
+  // ---------------- backend calls ----------------
+  async function sendMessage(text) {
+    if (!text || !text.trim()) return;
+    if (!state.backendUrl || !state.token) { openLink(); return; }
+
+    addMessage('user', text);
+    setMode('thinking');
+
+    try {
+      const res = await fetch(state.backendUrl.replace(/\/$/, '') + '/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-shubh-token': state.token,
+        },
+        body: JSON.stringify({ message: text, device: 'hud' }),
+      });
+
+      if (!res.ok) throw new Error('Server responded ' + res.status);
+      const data = await res.json();
+      setConnDot(true);
+      addMessage('ultron', data.reply || '(empty reply)');
+      speak(data.reply || '');
+      if (memoryPanel.classList.contains('open')) loadMemory();
+    } catch (err) {
+      setConnDot(false);
+      addMessage('error', 'Brain unreachable: ' + err.message);
+      if (state.loopMode) {
+        setTimeout(startLoopListening, 300);
+      } else {
+        setMode(state.wakeMode ? 'wake' : 'idle');
+        setHint();
+      }
+    }
+  }
+
+  async function loadMemory() {
+    if (!state.backendUrl || !state.token) {
+      memoryList.innerHTML = '<div class="memory-empty">Not linked yet.</div>';
+      return;
+    }
+    try {
+      const res = await fetch(state.backendUrl.replace(/\/$/, '') + '/memory', {
+        headers: { 'x-shubh-token': state.token },
+      });
+      if (!res.ok) throw new Error('status ' + res.status);
+      const items = await res.json();
+      if (!Array.isArray(items) || items.length === 0) {
+        memoryList.innerHTML = '<div class="memory-empty">No memory yet.</div>';
+        return;
+      }
+      memoryList.innerHTML = items.map(function (t) {
+        const topic = (t.topic || '').replace(/</g, '&lt;');
+        const details = (t.details || '').replace(/</g, '&lt;');
+        return '<div class="memory-item"><b>' + topic + '</b>' + details + '</div>';
+      }).join('');
+    } catch (e) {
+      memoryList.innerHTML = '<div class="memory-empty">Could not load memory.</div>';
+    }
+  }
+
+  document.getElementById('memoryBtn').addEventListener('click', () => {
+    const open = memoryPanel.classList.toggle('open');
+    document.getElementById('memoryBtn').classList.toggle('active', open);
+    if (open) loadMemory();
+  });
+
+  // ---------------- speech synthesis (speaks back) ----------------
+  let speakingRAF = null;
+  function speak(text) {
+    if (!('speechSynthesis' in window) || !text) { setMode(state.wakeMode ? 'wake' : 'idle'); setHint(); return; }
+
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1.02;
+    utter.pitch = 0.85;
+
+    utter.onstart = () => {
+      setMode('speaking');
+      pulseWhileSpeaking(true);
+    };
+    utter.onend = utter.onerror = () => {
+      pulseWhileSpeaking(false);
+      if (state.loopMode) {
+        setTimeout(startLoopListening, 300);
+      } else {
+        setMode(state.wakeMode ? 'wake' : 'idle');
+        setHint();
+      }
+    };
+
+    window.speechSynthesis.speak(utter);
+  }
+
+  function pulseWhileSpeaking(on) {
+    if (speakingRAF) { cancelAnimationFrame(speakingRAF); speakingRAF = null; }
+    if (!on) { setAmp(0); return; }
+    const start = performance.now();
+    function tick(now) {
+      const t = (now - start) / 1000;
+      const wave = 0.45 + 0.35 * Math.abs(Math.sin(t * 6.5)) + 0.15 * Math.abs(Math.sin(t * 13.1));
+      setAmp(Math.min(1, wave));
+      speakingRAF = requestAnimationFrame(tick);
+    }
+    speakingRAF = requestAnimationFrame(tick);
+  }
+
+  function setAmp(v) {
+    document.documentElement.style.setProperty('--amp', v.toFixed(3));
+  }
+
+  // ---------------- mic amplitude (reacts to real voice) ----------------
+  async function ensureMic() {
+    if (state.micStream) return true;
+    try {
+      state.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = state.audioCtx.createMediaStreamSource(state.micStream);
+      state.analyser = state.audioCtx.createAnalyser();
+      state.analyser.fftSize = 256;
+      source.connect(state.analyser);
+      return true;
+    } catch (e) {
+      addMessage('error', 'Microphone permission denied.');
+      return false;
+    }
+  }
+
+  function startAmpLoop() {
+    if (!state.analyser) return;
+    const data = new Uint8Array(state.analyser.frequencyBinCount);
+    function tick() {
+      state.analyser.getByteFrequencyData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i];
+      const avg = sum / data.length / 255; // 0..1
+      setAmp(Math.min(1, avg * 2.4));
+      state.ampRAF = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  function stopAmpLoop() {
+    if (state.ampRAF) { cancelAnimationFrame(state.ampRAF); state.ampRAF = null; }
+    setAmp(0);
+  }
+
+  // ---------------- push-to-talk (hold space) ----------------
+  let pttActive = false;
+  let pttFinalText = '';
+
+  function isTypingTarget(el) {
+    return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
+  }
+
+  async function startPushToTalk() {
+    if (pttActive || !SpeechRecognitionCtor) return;
+    pttActive = true;
+    pttFinalText = '';
+
+    if (state.wakeMode) stopWakeRecognition();
+    if (state.loopMode) stopLoopListening();
+    const micOk = await ensureMic();
+    if (micOk) startAmpLoop();
+
+    setMode('listening');
+    hintLine.textContent = 'LISTENING... RELEASE TO SEND';
+
+    const rec = new SpeechRecognitionCtor();
+    rec.lang = 'en-IN';
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onresult = (event) => {
+      let finalText = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+      }
+      if (finalText) pttFinalText += finalText + ' ';
+    };
+    rec.onerror = () => {};
+    rec.onend = () => {
+      if (pttActive) { try { rec.start(); } catch (e) {} }
+    };
+
+    state.pushRecognizer = rec;
+    try { rec.start(); } catch (e) {}
+  }
+
+  function stopPushToTalk() {
+    if (!pttActive) return;
+    pttActive = false;
+    stopAmpLoop();
+
+    if (state.pushRecognizer) {
+      const rec = state.pushRecognizer;
+      rec.onend = null;
+      try { rec.stop(); } catch (e) {}
+      state.pushRecognizer = null;
+    }
+
+    const text = pttFinalText.trim();
+    if (text) {
+      sendMessage(text); // resumes wake/loop listening itself once the reply is spoken
+    } else {
+      setMode(state.wakeMode ? 'wake' : (state.loopMode ? 'loop' : 'idle'));
+      setHint();
+      if (state.wakeMode) setTimeout(startWakeRecognition, 400);
+      if (state.loopMode) setTimeout(startLoopListening, 400);
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space' || e.repeat) return;
+    if (isTypingTarget(document.activeElement)) return;
+    if (linkOverlay.classList.contains('open')) return;
+    e.preventDefault();
+    startPushToTalk();
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.code !== 'Space') return;
+    if (isTypingTarget(document.activeElement)) return;
+    e.preventDefault();
+    stopPushToTalk();
+  });
+
+  // ---------------- wake word mode ----------------
+  function startWakeRecognition() {
+    if (!SpeechRecognitionCtor || !state.wakeMode || pttActive) return;
+    const rec = new SpeechRecognitionCtor();
+    rec.lang = 'en-IN';
+    rec.continuous = true;
+    rec.interimResults = false;
+
+    rec.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const said = event.results[i][0].transcript.toLowerCase();
+        if (said.includes('ultron')) {
+          const after = said.split('ultron').slice(1).join('ultron').trim();
+          if (after.length > 2) {
+            sendMessage(after);
+          } else {
+            setMode('listening');
+            hintLine.textContent = "HEARD YOU — GO ON...";
+          }
+        }
+      }
+    };
+    rec.onerror = () => {};
+    rec.onend = () => {
+      if (state.wakeMode && !pttActive) { try { rec.start(); } catch (e) {} }
+    };
+
+    state.wakeRecognizer = rec;
+    try { rec.start(); } catch (e) {}
+    setMode('wake');
+    setHint();
+  }
+
+  function stopWakeRecognition() {
+    if (state.wakeRecognizer) {
+      const rec = state.wakeRecognizer;
+      rec.onend = null;
+      try { rec.stop(); } catch (e) {}
+      state.wakeRecognizer = null;
+    }
+  }
+
+  wakeBtn.addEventListener('click', async () => {
+    state.wakeMode = !state.wakeMode;
+    wakeBtn.textContent = 'Wake: ' + (state.wakeMode ? 'On' : 'Off');
+    wakeBtn.classList.toggle('active', state.wakeMode);
+
+    if (state.wakeMode) {
+      if (!SpeechRecognitionCtor) {
+        addMessage('error', 'This browser does not support speech recognition. Use Chrome or Edge.');
+        state.wakeMode = false;
+        wakeBtn.textContent = 'Wake: Off';
+        wakeBtn.classList.remove('active');
+        return;
+      }
+      if (state.loopMode) loopBtn.click(); // mutually exclusive - one continuous recognizer at a time
+      await ensureMic();
+      startWakeRecognition();
+    } else {
+      stopWakeRecognition();
+      setMode('idle');
+      setHint();
+    }
+  });
+
+  // ---------------- hands-free loop (no wake word, no held key) ----------------
+  let loopSilenceTimer = null;
+  let loopFinalText = '';
+
+  function resetLoopSilenceTimer() {
+    if (loopSilenceTimer) clearTimeout(loopSilenceTimer);
+    loopSilenceTimer = setTimeout(() => {
+      const text = loopFinalText.trim();
+      stopLoopListening();
+
+      if (!text) {
+        if (state.loopMode) startLoopListening();
+        return;
+      }
+      if (isStopPhrase(text)) {
+        addMessage('ultron', 'Loop mode off.');
+        loopBtn.click();
+        return;
+      }
+      sendMessage(text); // resumes loop listening itself once the reply is spoken
+    }, 1500);
+  }
+
+  function startLoopListening() {
+    if (!SpeechRecognitionCtor || !state.loopMode || pttActive) return;
+    loopFinalText = '';
+
+    const rec = new SpeechRecognitionCtor();
+    rec.lang = 'en-IN';
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onstart = () => { setMode('listening'); hintLine.textContent = 'LISTENING...'; };
+    rec.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) loopFinalText += event.results[i][0].transcript + ' ';
+      }
+      resetLoopSilenceTimer();
+    };
+    rec.onerror = () => {};
+    rec.onend = () => {
+      if (state.loopMode && !pttActive && state.loopRecognizer === rec) {
+        try { rec.start(); } catch (e) {}
+      }
+    };
+
+    state.loopRecognizer = rec;
+    ensureMic().then((ok) => { if (ok) startAmpLoop(); });
+    try { rec.start(); } catch (e) {}
+    resetLoopSilenceTimer();
+  }
+
+  function stopLoopListening() {
+    if (loopSilenceTimer) { clearTimeout(loopSilenceTimer); loopSilenceTimer = null; }
+    stopAmpLoop();
+    if (state.loopRecognizer) {
+      const rec = state.loopRecognizer;
+      rec.onend = null;
+      try { rec.stop(); } catch (e) {}
+      state.loopRecognizer = null;
+    }
+  }
+
+  const loopBtn = document.getElementById('loopBtn');
+  loopBtn.addEventListener('click', async () => {
+    state.loopMode = !state.loopMode;
+    loopBtn.textContent = 'Loop: ' + (state.loopMode ? 'On' : 'Off');
+    loopBtn.classList.toggle('active', state.loopMode);
+
+    if (state.loopMode) {
+      if (!SpeechRecognitionCtor) {
+        addMessage('error', 'This browser does not support speech recognition. Use Chrome or Edge.');
+        state.loopMode = false;
+        loopBtn.textContent = 'Loop: Off';
+        loopBtn.classList.remove('active');
+        return;
+      }
+      if (state.wakeMode) wakeBtn.click(); // mutually exclusive - one continuous recognizer at a time
+      setMode('loop');
+      setHint();
+      await ensureMic();
+      startLoopListening();
+    } else {
+      stopLoopListening();
+      setMode('idle');
+      setHint();
+    }
+  });
+
+  // ---------------- boot ----------------
+  if (!SpeechRecognitionCtor) {
+    addMessage('error', 'Speech recognition is not supported in this browser. Try Chrome or Edge.');
+  }
+
+  setMode('idle');
+  setHint();
+  if (state.backendUrl && state.token) {
+    testConnection(state.backendUrl, state.token, true);
+  } else {
+    setTimeout(openLink, 500);
+  }
+})();
+</script>
+</body>
+</html>
